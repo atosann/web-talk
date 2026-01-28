@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>合言葉チャット</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .login-screen, .chat-screen {
+            padding: 30px;
+        }
+
+        .chat-screen {
+            display: none;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            text-align: center;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.waiting {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .messages {
+            height: 400px;
+            overflow-y: auto;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: #f9f9f9;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-bubble {
+            padding: 10px 15px;
+            border-radius: 15px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .message.mine .message-bubble {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .message.theirs .message-bubble {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .message-text {
+            margin-bottom: 5px;
+        }
+
+        .message-time {
+            font-size: 11px;
+            opacity: 0.7;
+        }
+
+        .link-preview {
+            margin-top: 10px;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            background: rgba(255,255,255,0.1);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .message.theirs .link-preview {
+            background: rgba(0,0,0,0.05);
+            border-color: rgba(0,0,0,0.1);
+        }
+
+        .link-preview:hover {
+            transform: scale(1.02);
+        }
+
+        .link-preview-image {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .link-preview-content {
+            padding: 10px;
+        }
+
+        .link-preview-title {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .link-preview-description {
+            font-size: 12px;
+            opacity: 0.8;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .link-preview-url {
+            font-size: 11px;
+            opacity: 0.6;
+            margin-top: 4px;
+        }
+
+        .youtube-embed {
+            margin-top: 10px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .youtube-embed iframe {
+            width: 100%;
+            height: 180px;
+            border: none;
+        }
+
+        .image-preview {
+            margin-top: 10px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .image-preview img {
+            width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+            display: block;
+            background: rgba(0,0,0,0.05);
+        }
+
+        .message-input-area {
+            display: flex;
+            gap: 10px;
+        }
+
+        .message-input-area input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+
+        .message-input-area input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .message-input-area button {
+            padding: 12px 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .message-input-area button:hover {
+            transform: scale(1.05);
+        }
+
+        .message-input-area button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .leave-btn {
+            margin-top: 15px;
+            background: #dc3545;
+            font-size: 14px;
+            padding: 10px;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 50px 20px;
+            font-size: 14px;
+        }
+
+        .info-text {
+            text-align: center;
+            color: #666;
+            font-size: 13px;
+            margin-top: 15px;
+            line-height: 1.5;
+        }
+
+        .feature-badge {
+            display: inline-block;
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            padding: 4px 8px;
+            border-radius: 5px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 合言葉チャット</h1>
+            <p>同じ合言葉で二人だけの会話</p>
+        </div>
+
+        <div class="login-screen" id="loginScreen">
+            <div class="input-group">
+                <label for="passphrase">合言葉を入力してください</label>
+                <input type="text" id="passphrase" placeholder="例：ひみつのあいことば" autocomplete="off">
+            </div>
+            <button class="btn" onclick="joinChat()">チャットに参加</button>
+            <div class="info-text">
+                💡 同じ合言葉を入力した人と繋がります<br>
+                友達に合言葉を教えてチャットしよう！
+                <div class="feature-badge">🔗 リンクプレビュー対応</div>
+            </div>
+        </div>
+
+        <div class="chat-screen" id="chatScreen">
+            <div class="status" id="status">接続中...</div>
+            <div class="messages" id="messages">
+                <div class="empty-state">メッセージがまだありません</div>
+            </div>
+            <div class="message-input-area">
+                <input type="text" id="messageInput" placeholder="メッセージやURLを入力..." autocomplete="off">
+                <button onclick="sendMessage()" id="sendBtn">送信</button>
+            </div>
+            <button class="btn leave-btn" onclick="leaveChat()">退出する</button>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, push, onValue, set, onDisconnect, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDXwURGLQd7VGtK6v6yYkICX5ZsrIRY_G8",
+            authDomain: "webtalk-4ddce.firebaseapp.com",
+            databaseURL: "https://webtalk-4ddce-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "webtalk-4ddce",
+            storageBucket: "webtalk-4ddce.firebasestorage.app",
+            messagingSenderId: "135962570273",
+            appId: "1:135962570273:web:ff8f0e0587e732eb9bbd60",
+            measurementId: "G-9J33ET1ZX0"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        let currentRoom = null;
+        let myUserId = 'user_' + Math.random().toString(36).substr(2, 9);
+
+        // URL detection regex
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        const youtubeRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/;
+        const imageRegex = /\.(jpg|jpeg|png|gif|webp)$/i;
+
+        // Make functions global
+        window.joinChat = function() {
+            const passphrase = document.getElementById('passphrase').value.trim();
+            if (!passphrase) {
+                alert('合言葉を入力してください');
+                return;
+            }
+
+            currentRoom = passphrase;
+
+            // Switch to chat screen
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('chatScreen').style.display = 'block';
+
+            // Set up presence
+            const userRef = ref(database, `rooms/${currentRoom}/users/${myUserId}`);
+            set(userRef, {
+                online: true,
+                timestamp: serverTimestamp()
+            });
+
+            // Remove user on disconnect
+            onDisconnect(userRef).remove();
+
+            // Listen for users
+            const usersRef = ref(database, `rooms/${currentRoom}/users`);
+            onValue(usersRef, (snapshot) => {
+                const users = snapshot.val();
+                const userCount = users ? Object.keys(users).length : 0;
+                updateStatus(userCount);
+            });
+
+            // Listen for messages
+            const messagesRef = ref(database, `rooms/${currentRoom}/messages`);
+            onValue(messagesRef, (snapshot) => {
+                const messages = [];
+                snapshot.forEach((childSnapshot) => {
+                    messages.push({
+                        id: childSnapshot.key,
+                        ...childSnapshot.val()
+                    });
+                });
+                displayMessages(messages);
+            });
+        };
+
+        window.sendMessage = function() {
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+            
+            if (!text || !currentRoom) return;
+
+            const sendBtn = document.getElementById('sendBtn');
+            sendBtn.disabled = true;
+
+            const messagesRef = ref(database, `rooms/${currentRoom}/messages`);
+            push(messagesRef, {
+                userId: myUserId,
+                text: text,
+                timestamp: serverTimestamp()
+            }).then(() => {
+                input.value = '';
+                sendBtn.disabled = false;
+                input.focus();
+            }).catch((error) => {
+                console.error('Error sending message:', error);
+                alert('メッセージの送信に失敗しました。もう一度お試しください。');
+                sendBtn.disabled = false;
+            });
+        };
+
+        window.leaveChat = function() {
+            if (currentRoom) {
+                const userRef = ref(database, `rooms/${currentRoom}/users/${myUserId}`);
+                set(userRef, null);
+            }
+            
+            currentRoom = null;
+            document.getElementById('chatScreen').style.display = 'none';
+            document.getElementById('loginScreen').style.display = 'block';
+            document.getElementById('passphrase').value = '';
+            document.getElementById('messages').innerHTML = '<div class="empty-state">メッセージがまだありません</div>';
+        };
+
+        function updateStatus(userCount) {
+            const statusDiv = document.getElementById('status');
+            
+            if (userCount >= 2) {
+                statusDiv.textContent = '✅ 相手が接続中（' + userCount + '人）';
+                statusDiv.className = 'status connected';
+            } else {
+                statusDiv.textContent = '⏳ 相手を待っています...';
+                statusDiv.className = 'status waiting';
+            }
+        }
+
+        function extractUrls(text) {
+            return text.match(urlRegex) || [];
+        }
+
+        function getYoutubeId(url) {
+            const match = url.match(youtubeRegex);
+            return match ? match[1] : null;
+        }
+
+        function isImageUrl(url) {
+            return imageRegex.test(url);
+        }
+
+        function createLinkPreview(url) {
+            const youtubeId = getYoutubeId(url);
+            
+            if (youtubeId) {
+                return `
+                    <div class="youtube-embed">
+                        <iframe 
+                            src="https://www.youtube.com/embed/${youtubeId}" 
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                `;
+            }
+            
+            if (isImageUrl(url)) {
+                return `
+                    <div class="image-preview">
+                        <img src="${url}" alt="画像" onerror="this.style.display='none'">
+                    </div>
+                `;
+            }
+            
+            // Generic link preview
+            const domain = new URL(url).hostname;
+            return `
+                <div class="link-preview" onclick="window.open('${url}', '_blank')">
+                    <div class="link-preview-content">
+                        <div class="link-preview-title">🔗 リンク</div>
+                        <div class="link-preview-url">${domain}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function processMessageText(text) {
+            const urls = extractUrls(text);
+            let processedText = escapeHtml(text);
+            
+            // Make URLs clickable
+            urls.forEach(url => {
+                processedText = processedText.replace(
+                    url, 
+                    `<a href="${url}" target="_blank" style="color: inherit; text-decoration: underline;">${url}</a>`
+                );
+            });
+            
+            return processedText;
+        }
+
+        function displayMessages(messages) {
+            const messagesDiv = document.getElementById('messages');
+            const currentScroll = messagesDiv.scrollTop;
+            const isScrolledToBottom = messagesDiv.scrollHeight - messagesDiv.clientHeight <= currentScroll + 50;
+            
+            if (messages.length === 0) {
+                messagesDiv.innerHTML = '<div class="empty-state">メッセージがまだありません</div>';
+                return;
+            }
+            
+            messagesDiv.innerHTML = messages.map(msg => {
+                const isMine = msg.userId === myUserId;
+                const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) : '';
+                const urls = extractUrls(msg.text);
+                const processedText = processMessageText(msg.text);
+                
+                let linkPreviews = '';
+                urls.forEach(url => {
+                    linkPreviews += createLinkPreview(url);
+                });
+                
+                return `
+                    <div class="message ${isMine ? 'mine' : 'theirs'}">
+                        <div class="message-bubble">
+                            <div class="message-text">${processedText}</div>
+                            ${time ? `<div class="message-time">${time}</div>` : ''}
+                            ${linkPreviews}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            if (isScrolledToBottom) {
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Enter key handlers
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('messageInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+            
+            document.getElementById('passphrase').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    joinChat();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
